@@ -189,6 +189,7 @@ bool ModelH3D::BuildModel(ModelData& model, const std::wstring& basePath) const
         
         glTF::Mesh gltfMesh;
         gltfMesh.primitives.resize(1);
+        gltfMesh.skin = -1;
 
         glTF::Primitive& prim = gltfMesh.primitives[0];
         prim.attributes[glTF::Primitive::kPosition] = &PosStream;

@@ -189,10 +189,14 @@ void Renderer::Initialize(void)
     ASSERT(sm_PSOs.size() == 8);
 
     // Default PSO
+    D3D12_RASTERIZER_DESC MyPSO = RasterizerDefault;
+    MyPSO.FillMode = D3D12_FILL_MODE_WIREFRAME;
 
     m_DefaultPSO.SetRootSignature(m_RootSig);
     m_DefaultPSO.SetRasterizerState(RasterizerDefault);
-    m_DefaultPSO.SetBlendState(BlendDisable);
+    
+    //m_DefaultPSO.SetBlendState(BlendDisable);
+    m_DefaultPSO.SetBlendState(BlendTraditional);
     m_DefaultPSO.SetDepthStencilState(DepthStateReadWrite);
     m_DefaultPSO.SetInputLayout(0, nullptr);
     m_DefaultPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);

@@ -34,7 +34,7 @@
 #include "ShadowCamera.h"
 #include "Display.h"
 
-#define LEGACY_RENDERER
+//#define LEGACY_RENDERER
 
 using namespace GameCore;
 using namespace Math;
@@ -146,11 +146,18 @@ void LoadIBLTextures()
 
 void ModelViewer::Startup( void )
 {
-    MotionBlur::Enable = true;
-    TemporalEffects::EnableTAA = true;
+    //MotionBlur::Enable = true;
+    //TemporalEffects::EnableTAA = true;
+    //FXAA::Enable = false;
+    //PostEffects::EnableHDR = true;
+    //PostEffects::EnableAdaptation = true;
+    //SSAO::Enable = true;
+
+    MotionBlur::Enable = false;
+    TemporalEffects::EnableTAA = false;
     FXAA::Enable = false;
-    PostEffects::EnableHDR = true;
-    PostEffects::EnableAdaptation = true;
+    PostEffects::EnableHDR = false;
+    PostEffects::EnableAdaptation = false;
     SSAO::Enable = true;
 
     Renderer::Initialize();
@@ -274,6 +281,7 @@ void ModelViewer::RenderScene( void )
         float sinphi = sinf(g_SunInclination * 3.14159f * 0.5f);
 
         Vector3 SunDirection = Normalize(Vector3( costheta * cosphi, sinphi, sintheta * cosphi ));
+        SunDirection = Math::Vector3(0, 0, 1);
         Vector3 ShadowBounds = Vector3(m_ModelInst.GetRadius());
         //m_SunShadowCamera.UpdateMatrix(-SunDirection, m_ModelInst.GetCenter(), ShadowBounds,
         m_SunShadowCamera.UpdateMatrix(-SunDirection, Vector3(0, -500.0f, 0), Vector3(5000, 3000, 3000),
@@ -346,7 +354,7 @@ void ModelViewer::RenderScene( void )
     }
 
     // Some systems generate a per-pixel velocity buffer to better track dynamic and skinned meshes.  Everything
-    // is static in our scene, so we generate velocity from camera motion and the depth buffer.  A velocity buffer
+    // is static in our sceneO:K, so we generate velocity from camera motion and the depth buffer.  A velocity buffer
     // is necessary for all temporal effects (and motion blur).
     MotionBlur::GenerateCameraVelocityBuffer(gfxContext, m_Camera, true);
 

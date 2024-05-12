@@ -96,43 +96,46 @@ void AssimpModel::PrintModelStats()
     printf("\n");
 }
 
-int main(int argc, char **argv)
-{
-    if (argc != 3)
-    {
-        PrintHelp();
-        return -1;
-    }
-
-    const char *input_file = argv[1];
-    const char *output_file = argv[2];
-
-    printf("input file %s\n", input_file);
-    printf("output file %s\n", output_file);
-
-	AssimpModel model;
-
-    printf("loading...\n");
-    if (!model.Load(input_file))
-    {
-        printf("failed to load model: %s\n", input_file);
-        return -1;
-    }
-
-    printf("saving...\n");
-    if (!model.Save(output_file))
-    {
-        printf("failed to save model: %s\n", output_file);
-        return -1;
-    }
-
-    printf("done\n");
-
-    model.PrintModelStats();
-
-    std::cout << "Press enter...";
-    std::string trash;
-    std::getline(std::cin, trash);
-
+int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
     return 0;
 }
+//int main(int argc, char **argv)
+//{
+//    if (argc != 3)
+//    {
+//        PrintHelp();
+//        return -1;
+//    }
+//
+//    const char *input_file = argv[1];
+//    const char *output_file = argv[2];
+//
+//    printf("input file %s\n", input_file);
+//    printf("output file %s\n", output_file);
+//
+//	AssimpModel model;
+//
+//    printf("loading...\n");
+//    if (!model.Load(input_file))
+//    {
+//        printf("failed to load model: %s\n", input_file);
+//        return -1;
+//    }
+//
+//    printf("saving...\n");
+//    if (!model.Save(output_file))
+//    {
+//        printf("failed to save model: %s\n", output_file);
+//        return -1;
+//    }
+//
+//    printf("done\n");
+//
+//    model.PrintModelStats();
+//
+//    std::cout << "Press enter...";
+//    std::string trash;
+//    std::getline(std::cin, trash);
+//
+//    return 0;
+//}

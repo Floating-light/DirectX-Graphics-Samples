@@ -205,7 +205,7 @@ float3 Diffuse_IBL(SurfaceProperties Surface)
     float LdotH = saturate(dot(Surface.N, normalize(Surface.N + Surface.V)));
     float fd90 = 0.5 + 2.0 * Surface.roughness * LdotH * LdotH;
     float3 DiffuseBurley = Surface.c_diff * Fresnel_Shlick(1, fd90, Surface.NdotV);
-    return DiffuseBurley * irradianceIBLTexture.Sample(defaultSampler, Surface.N);
+    return DiffuseBurley /** irradianceIBLTexture.Sample(defaultSampler, Surface.N)*/;
 }
 
 // Approximate specular IBL by sampling lower mips according to roughness.  Then modulate by Fresnel. 
@@ -213,7 +213,7 @@ float3 Specular_IBL(SurfaceProperties Surface)
 {
     float lod = Surface.roughness * IBLRange + IBLBias;
     float3 specular = Fresnel_Shlick(Surface.c_spec, 1, Surface.NdotV);
-    return specular * radianceIBLTexture.SampleLevel(cubeMapSampler, reflect(-Surface.V, Surface.N), lod);
+    return specular /** radianceIBLTexture.SampleLevel(cubeMapSampler, reflect(-Surface.V, Surface.N), lod)*/;
 }
 
 float3 ComputeNormal(VSOutput vsOutput)
@@ -243,11 +243,12 @@ float3 ComputeNormal(VSOutput vsOutput)
 float4 main(VSOutput vsOutput) : SV_Target0
 {
     // Load and modulate textures
-    float4 baseColor = baseColorFactor * baseColorTexture.Sample(baseColorSampler, UVSET(BASECOLOR));
+    //float4 baseColor = /*baseColorFactor **/ baseColorTexture.Sample(baseColorSampler, UVSET(BASECOLOR));
+    float4 baseColor = /*baseColorFactor **/baseColorTexture.Sample(baseColorSampler, vsOutput.uv0); 
     float2 metallicRoughness = metallicRoughnessFactor * 
         metallicRoughnessTexture.Sample(metallicRoughnessSampler, UVSET(METALLICROUGHNESS)).bg;
     float occlusion = occlusionTexture.Sample(occlusionSampler, UVSET(OCCLUSION));
-    float3 emissive = emissiveFactor * emissiveTexture.Sample(emissiveSampler, UVSET(EMISSIVE));
+    float3 emissive = /*emissiveFactor * */emissiveTexture.Sample(emissiveSampler, UVSET(EMISSIVE));
     float3 normal = ComputeNormal(vsOutput);
 
     SurfaceProperties Surface;
@@ -290,6 +291,14 @@ float4 main(VSOutput vsOutput) : SV_Target0
 #endif
 
     // TODO: Shade each light using Forward+ tiles
+    //return float4(vsOutput.normal, 1.f);
+    //return float4(colorAccum, baseColor.a);
+    //bool3 b = float3(baseColor.xyz) == float3(0, 0, 0);
+    //if (b[0]&&b[1]&&b[2])
+    //{
+    //    baseColor = float4(1, 1, 1, 1);
+    //}
+    return baseColor ;
+    //return float4(vsOutput.uv0, 0, 1);
 
-    return float4(colorAccum, baseColor.a);
 }

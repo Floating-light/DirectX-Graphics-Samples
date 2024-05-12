@@ -50,7 +50,7 @@ void Model::Render(
         BoundingSphere sphereWS = sphereXform * sphereLS;
         BoundingSphere sphereVS = BoundingSphere(viewMat * sphereWS.GetCenter(), sphereWS.GetRadius());
 
-        if (frustum.IntersectSphere(sphereVS))
+        if (frustum.IntersectSphere(sphereVS) )
         {
             float distance = -sphereVS.GetCenter().GetZ() - sphereVS.GetRadius();
             sorter.AddMesh(mesh, distance,

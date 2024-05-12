@@ -172,6 +172,7 @@ bool AssimpModel::LoadAssimp(const string& filename)
         srcMat->Get(AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0), texNormalPath);
         srcMat->Get(AI_MATKEY_TEXTURE(aiTextureType_LIGHTMAP, 0), texLightmapPath);
         srcMat->Get(AI_MATKEY_TEXTURE(aiTextureType_REFLECTION, 0), texReflectionPath);
+        Utility::Printf("material %d : aiTextureType_DIFFUSE %s\n", materialIndex, texDiffusePath.C_Str());
 
         dstMat->diffuse = Color(diffuse.r, diffuse.g, diffuse.b);
         dstMat->specular = Color(specular.r, specular.g, specular.b);
@@ -195,6 +196,7 @@ bool AssimpModel::LoadAssimp(const string& filename)
         srcMat->Get(AI_MATKEY_NAME, matName);
         strncpy_s(dstMat->name, matName.C_Str(), Material::maxMaterialName - 1);
     }
+    
 
     m_Header.meshCount = scene->mNumMeshes;
     m_pMesh = new Mesh [m_Header.meshCount];
@@ -379,6 +381,8 @@ bool AssimpModel::LoadAssimp(const string& filename)
             *dstIndexDepth++ = srcMesh->mFaces[f].mIndices[1];
             *dstIndexDepth++ = srcMesh->mFaces[f].mIndices[2];
         }
+        Utility::Printf("%d mesh: %s material %d, face num : %d \n", meshIndex, srcMesh->mName.C_Str(), srcMesh->mMaterialIndex, srcMesh->mNumFaces);
+
     }
 
     ComputeAllBoundingBoxes();
