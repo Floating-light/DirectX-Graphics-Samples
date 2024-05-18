@@ -83,7 +83,8 @@ void OptimizeMesh( Renderer::Primitive& outPrim, const glTF::Primitive& inPrim, 
     if (inPrim.indices == nullptr)
     {
         ASSERT(inPrim.mode == 4, "Impossible primitive topology when lacking indices");
-
+        // 自己计算Indices, 说明primitive中的顶点排列就是按绘制indices的顺序排列的
+        // indices就是0,1,2...indexCount-1.
         indexCount = vertexCount * 3;
         maxIndex = indexCount - 1;
         if (indexCount > 0xFFFF)
