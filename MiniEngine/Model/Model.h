@@ -81,7 +81,7 @@ struct Mesh
 
 struct GraphNode // 96 bytes
 {
-    Math::Matrix4 xform;
+    Math::Matrix4 xform;// all Local space
     Math::Quaternion rotation;
     Math::XMFLOAT3 scale;
 

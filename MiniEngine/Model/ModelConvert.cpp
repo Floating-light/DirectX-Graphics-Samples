@@ -259,6 +259,7 @@ void BuildMaterials(ModelData& model, const glTF::Asset& asset)
     for (size_t i = 0; i < asset.m_images.size(); ++i)
         model.m_TextureNames[i] = asset.m_images[i].path;
 
+    // texture path to options
     std::map<std::string, uint8_t> textureOptions;
 
     const uint32_t numMaterials = (uint32_t)asset.m_materials.size();
@@ -294,17 +295,18 @@ void BuildMaterials(ModelData& model, const glTF::Asset& asset)
             {
                 if (srcMat.textures[ti]->source != nullptr)
                 {
-                    dstMat.stringIdx[ti] = uint16_t(srcMat.textures[ti]->source - asset.m_images.data());
+                    dstMat.stringIdx[ti] = uint16_t(srcMat.textures[ti]->source - asset.m_images.data()); // 得到这个Image的index .
                 }
 
                 if (srcMat.textures[ti]->sampler != nullptr)
                 {
+                    Utility::Printf("-------->> S %d, T %d\n", srcMat.textures[ti]->sampler->wrapS, srcMat.textures[ti]->sampler->wrapT);
                     dstMat.addressModes |= srcMat.textures[ti]->sampler->wrapS << (ti * 4);
                     dstMat.addressModes |= srcMat.textures[ti]->sampler->wrapT << (ti * 4 + 2);
                 }
                 else
                 {
-                    dstMat.addressModes |= 0x5 << (ti * 4);
+                    dstMat.addressModes |= 0x5 << (ti * 4); 
                 }
             }
             else

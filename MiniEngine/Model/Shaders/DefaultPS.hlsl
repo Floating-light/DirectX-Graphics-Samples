@@ -298,6 +298,8 @@ float4 main(VSOutput vsOutput) : SV_Target0
     //{
     //    baseColor = float4(1, 1, 1, 1);
     //}
+    float gamma = 2.2;
+    baseColor.rgb = pow(baseColor.rgb, float3(gamma, gamma, gamma));
     return baseColor ;
     //return float4(vsOutput.uv0, 0, 1);
 

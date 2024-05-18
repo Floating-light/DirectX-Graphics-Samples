@@ -52,19 +52,24 @@ namespace Renderer
     struct ModelData
     {
         BoundingSphere m_BoundingSphere;
-        AxisAlignedBox m_BoundingBox;
-        std::vector<byte> m_GeometryData;
+        AxisAlignedBox m_BoundingBox;// 这些Bound, 在遍历输入文件的所有Node的时候累计
+        std::vector<byte> m_GeometryData;//用这一个Buffer存所有vertex，index Buffer.
         std::vector<byte> m_AnimationKeyFrameData;
         std::vector<AnimationCurve> m_AnimationCurves;
         std::vector<AnimationSet> m_Animations;
         std::vector<uint16_t> m_JointIndices;
         std::vector<Matrix4> m_JointIBMs;
-        std::vector<MaterialTextureData> m_MaterialTextures;
-        std::vector<MaterialConstantData> m_MaterialConstants;
+                                                             
         std::vector<Mesh*> m_Meshes;
-        std::vector<GraphNode> m_SceneGraph;
-        std::vector<std::string> m_TextureNames;
-        std::vector<uint8_t> m_TextureOptions;
+        std::vector<GraphNode> m_SceneGraph;// 存Transform(Local Transform), 材质id等信息，与Mesh一一对应,
+
+        // 材质constants参数, baseColorFactor ...
+        std::vector<MaterialConstantData> m_MaterialConstants; 
+        // 对应材质的textures , 一个TextureData里面多个texture, 对应texture的值是下面"m_TextureNames"的index，没有就是 0xFFFF
+        // addressModes 是采样器的flag， 用一个uint32记下了所有对应texture的采样参数
+        std::vector<MaterialTextureData> m_MaterialTextures; 
+        std::vector<std::string> m_TextureNames; // texture 的相对path(文件名)
+        std::vector<uint8_t> m_TextureOptions; // 每个texture对应的纹理选项:TexConversionFlags， 没有就是0xFF
     };
 
     struct FileHeader
