@@ -52,15 +52,15 @@ namespace PSOFlags
 struct Mesh
 {
     float    bounds[4];     // A bounding sphere
-    uint32_t vbOffset;      // BufferLocation - Buffer.GpuVirtualAddress
-    uint32_t vbSize;        // SizeInBytes
+    uint32_t vbOffset;      // BufferLocation - Buffer.GpuVirtualAddress，第一个Draw开始在GemoetryBuffer的Offset
+    uint32_t vbSize;        // SizeInBytes,所有Draw的vb总Size
     uint32_t vbDepthOffset; // BufferLocation - Buffer.GpuVirtualAddress
     uint32_t vbDepthSize;   // SizeInBytes
     uint32_t ibOffset;      // BufferLocation - Buffer.GpuVirtualAddress
-    uint32_t ibSize;        // SizeInBytes
-    uint8_t  vbStride;      // StrideInBytes
+    uint32_t ibSize;        // SizeInBytes， 所有Draw的ib总Size
+    uint8_t  vbStride;      // StrideInBytes， 两个数据开头之间的间隔
     uint8_t  ibFormat;      // DXGI_FORMAT
-    uint16_t meshCBV;       // Index of mesh constant buffer
+    uint16_t meshCBV;       // Index of mesh constant buffer， m_SceneGraph 的index，transform
     uint16_t materialCBV;   // Index of material constant buffer
     uint16_t srvTable;      // Offset into SRV descriptor heap for textures
     uint16_t samplerTable;  // Offset into sampler descriptor heap for samplers
@@ -72,9 +72,9 @@ struct Mesh
 
     struct Draw
     {
-        uint32_t primCount;   // Number of indices = 3 * number of triangles
-        uint32_t startIndex;  // Offset to first index in index buffer 
-        uint32_t baseVertex;  // Offset to first vertex in vertex buffer
+        uint32_t primCount;   // Number of indices = 3 * number of triangles，index的数量
+        uint32_t startIndex;  // Offset to first index in index buffer ，第几个index，不是以byte
+        uint32_t baseVertex;  // Offset to first vertex in vertex buffer，顶点数据的偏移量，第几个顶点数据，不是以byte
     };
     Draw draw[1];           // Actually 1 or more draws
 };
@@ -85,7 +85,7 @@ struct GraphNode // 96 bytes
     Math::Quaternion rotation;
     Math::XMFLOAT3 scale;
 
-    uint32_t matrixIdx : 28;
+    uint32_t matrixIdx : 28; // 自己在m_SceneGraph中的Index
     uint32_t hasSibling : 1;
     uint32_t hasChildren : 1;
     uint32_t staleMatrix : 1;

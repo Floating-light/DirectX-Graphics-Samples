@@ -39,7 +39,7 @@ namespace Renderer
             uint32_t hash;
             struct {
                 uint32_t psoFlags : 16;
-                uint32_t index32 : 1;
+                uint32_t index32 : 1; // indexbuffer 是不是32bit (or 16 bit)
                 uint32_t materialIdx : 15;
             };
         };

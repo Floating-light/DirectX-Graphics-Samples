@@ -92,7 +92,7 @@ void Renderer::CompileMesh(
     uint32_t curDepthVBOffset = (uint32_t)totalVertexSize;
     uint32_t curIBOffset = curDepthVBOffset + (uint32_t)totalDepthVertexSize;
 
-    for (auto& iter : renderMeshes)
+    for (auto& iter : renderMeshes)// unique pso meshes
     {
         size_t numDraws = iter.second.size();
         Mesh* mesh = (Mesh*)malloc(sizeof(Mesh) + sizeof(Mesh::Draw) * (numDraws - 1));

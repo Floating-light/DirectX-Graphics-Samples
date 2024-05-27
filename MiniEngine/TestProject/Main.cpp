@@ -29,6 +29,8 @@
 
 // 
 #include "ModelAssimp.h"
+#include "MyModel.h"
+
 
 using namespace GameCore;
 using namespace Graphics;
@@ -136,20 +138,23 @@ void TestProject::Startup( void )
         AssimpModel AM;
         std::string filePath = "HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
         std::wstring filePathW = L"HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
+
+        std::shared_ptr<FMyModel> NewModel = FMyModel::LoadModel(filePath); 
+        
         //std::string filePath = "HeiTianE/星穹铁道—黑天鹅（优化）.pmx";
         //std::wstring filePathW = L"HeiTianE/星穹铁道—黑天鹅（优化）.pmx";
-        if (AM.Load(filePath))
-        {
-            Renderer::ModelData Data;
-            const std::wstring basePathW = Utility::GetBasePath(filePathW);
-            if (AM.BuildModel(Data, basePathW))
-            {
-                const std::wstring miniFileName = Utility::RemoveExtension(filePathW) + L".mini"; 
+        //if (AM.Load(filePath))
+        //{
+        //    Renderer::ModelData Data;
+        //    const std::wstring basePathW = Utility::GetBasePath(filePathW);
+        //    if (AM.BuildModel(Data, basePathW))
+        //    {
+        //        const std::wstring miniFileName = Utility::RemoveExtension(filePathW) + L".mini"; 
 
-                bool Succ = Renderer::SaveModel(miniFileName, Data);
-                Utility::Printf("success : %d", Succ);
-            }
-        }
+        //        bool Succ = Renderer::SaveModel(miniFileName, Data);
+        //        Utility::Printf("success : %d", Succ);
+        //    }
+        //}
     }
     MotionBlur::Enable = false;
     TemporalEffects::EnableTAA = false;
@@ -171,14 +176,15 @@ void TestProject::Startup( void )
     //m_CameraController.reset(new FlyingFPSCamera(m_Camera, Math::Vector3(Math::kYUnitVector)));
 
     //m_ModelInst = Renderer::LoadModel(L"HuangQuan/exported/untitled22222.gltf", true);
-    m_ModelInst = Renderer::LoadModel(L"HuangQuan/星穹铁道—黄泉（轴修复）.gl", true);
-    //m_ModelInst = Renderer::LoadModel(L"HeiTianE/星穹铁道—黑天鹅（优化）.gl", true);
+    //m_ModelInst = Renderer::LoadModel(L"HuangQuan/星穹铁道—黄泉（轴修复）.gl", true);
+    m_ModelInst = Renderer::LoadModel(L"HeiTianE/星穹铁道—黑天鹅（优化）.gl", true);
     m_ModelInst.LoopAllAnimations();
     m_ModelInst.Resize(10.0f);
 
     MotionBlur::Enable = false;
     m_Camera.SetZRange(1.0f, 10000.0f);
     m_CameraController.reset(new OrbitCamera(m_Camera, m_ModelInst.GetBoundingSphere(), Vector3(kYUnitVector)));
+
 
 }
 
