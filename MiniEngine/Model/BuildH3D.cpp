@@ -154,7 +154,10 @@ bool ModelH3D::BuildModel(ModelData& model, const std::wstring& basePath) const
     for (uint32_t i = 0; i < m_Header.meshCount; ++i)
     {
         const Mesh& mesh = GetMesh(i);
-
+        if (i == 7)
+        {
+            Utility::Print("Custom 7------------\n");
+        }
         glTF::Accessor PosStream;
         PosStream.dataPtr = m_pVertexData + mesh.vertexDataByteOffset;
         PosStream.stride = mesh.vertexStride;
@@ -204,9 +207,12 @@ bool ModelH3D::BuildModel(ModelData& model, const std::wstring& basePath) const
         prim.minIndex = 0;
         prim.maxIndex = 0;
 
+        const size_t before = model.m_GeometryData.size(); 
         BoundingSphere sphereOS;
         AxisAlignedBox boxOS;
         Renderer::CompileMesh(model.m_Meshes, model.m_GeometryData, gltfMesh, 0, Matrix4(kIdentity), sphereOS, boxOS); 
+        Utility::Printf("YES: %d. all data size: %d\n", i, model.m_GeometryData.size() - before);
+
         model.m_BoundingSphere = model.m_BoundingSphere.Union(sphereOS);
         model.m_BoundingBox.AddBoundingBox(boxOS);
     }

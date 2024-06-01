@@ -79,9 +79,10 @@ void Renderer::CompileMesh(
         renderMeshes[hash].push_back(&prim);
         totalVertexSize += prim.VB->size();
         totalDepthVertexSize += prim.DepthVB->size();
-        totalIndexSize += Math::AlignUp(prim.IB->size(), 4);
+        totalIndexSize += prim.IB->size();
+        //totalIndexSize += Math::AlignUp(prim.IB->size(), 4);
     }
-
+    Utility::Printf("VB: %d, DVB: %d, IB: %d\n", totalVertexSize, totalDepthVertexSize, totalIndexSize); 
     uint32_t totalBufferSize = (uint32_t)(totalVertexSize + totalDepthVertexSize + totalIndexSize);
 
     Utility::ByteArray stagingBuffer;

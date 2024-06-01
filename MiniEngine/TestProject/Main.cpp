@@ -150,14 +150,43 @@ void TestProject::Startup( void )
             const std::wstring basePathW = Utility::GetBasePath(filePathW);
             if (AM.BuildModel(offData, basePathW))
             {
-                //bool Succ = Renderer::SaveModel(miniFileName, Data);
+                bool Succ = Renderer::SaveModel(miniFileName, offData);
                 Utility::Printf("success : %d", false);
             }
         }
 
         std::shared_ptr<Renderer::ModelData> NewModel = FMyModel::LoadModel(filePath); 
-        bool Succ = Renderer::SaveModel(miniFileName, *NewModel);
-        Utility::Printf("success : %d", Succ);
+        for (int i = 0; i < NewModel->m_Meshes.size(); ++i)
+        {
+            Mesh* MyMesh = NewModel->m_Meshes[i];
+            Mesh* OldMesh = offData.m_Meshes[i];
+            memcpy(MyMesh->bounds, OldMesh->bounds, 4 * sizeof(float));
+            assert(MyMesh->draw[0].primCount == OldMesh->draw[0].primCount);
+            assert(MyMesh->draw[0].baseVertex == OldMesh->draw[0].baseVertex);
+            assert(MyMesh->draw[0].startIndex == OldMesh->draw[0].startIndex);
+            assert(MyMesh->vbOffset == OldMesh->vbOffset);
+            assert(MyMesh->vbSize == OldMesh->vbSize);
+            //int Equi = memcmp(NewModel->m_GeometryData.data() + MyMesh->vbOffset, offData.m_GeometryData.data() + OldMesh->vbOffset, MyMesh->vbSize);
+            //assert(Equi == 0);
+
+            assert(MyMesh->vbDepthOffset== OldMesh->vbDepthOffset);
+            assert(MyMesh->vbDepthSize == OldMesh->vbDepthSize);
+            assert(MyMesh->ibOffset== OldMesh->ibOffset);
+            assert(MyMesh->ibSize== OldMesh->ibSize);
+            std::vector<uint16_t> Ind1(MyMesh->ibSize/ sizeof(uint16_t)); 
+            std::vector<uint16_t> Ind2(MyMesh->ibSize/ sizeof(uint16_t)); 
+            memcpy(Ind1.data(), NewModel->m_GeometryData.data() + MyMesh->ibOffset, MyMesh->ibSize);  
+            memcpy(Ind2.data(), offData.m_GeometryData.data() + OldMesh->ibOffset + MyMesh->ibOffset, MyMesh->ibSize); 
+
+            int Equi = memcmp(NewModel->m_GeometryData.data() + MyMesh->ibOffset, offData.m_GeometryData.data() + OldMesh->ibOffset, MyMesh->ibSize);
+            assert(Equi == 0);
+            assert(MyMesh->vbStride == OldMesh->vbStride);
+            assert(MyMesh->ibFormat== OldMesh->ibFormat);
+
+        }
+        
+        //bool Succ = Renderer::SaveModel(miniFileName, *NewModel);
+        //Utility::Printf("success : %d", Succ);
     }
     MotionBlur::Enable = false;
     TemporalEffects::EnableTAA = false;

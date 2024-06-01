@@ -145,19 +145,19 @@ void OptimizeMesh( Renderer::Primitive& outPrim, const glTF::Primitive& inPrim, 
         b32BitIndices = maxIndex > 0xFFFF;
         uint32_t indexSize = b32BitIndices ? 4 : 2;
         outPrim.IB = std::make_shared<std::vector<byte>>(indexSize * indexCount);
-        if (b32BitIndices)
-        {
-            ASSERT(inPrim.indices->componentType == Accessor::kUnsignedInt);
-            OptimizeFaces((uint32_t*)inPrim.indices->dataPtr, inPrim.indices->count, (uint32_t*)outPrim.IB->data(), 64);
-        }
-        else if (inPrim.indices->componentType == Accessor::kUnsignedShort)
-        {
-            OptimizeFaces((uint16_t*)inPrim.indices->dataPtr, inPrim.indices->count, (uint16_t*)outPrim.IB->data(), 64);
-        }
-        else
-        {
-            OptimizeFaces((uint32_t*)inPrim.indices->dataPtr, inPrim.indices->count, (uint16_t*)outPrim.IB->data(), 64);
-        }
+        //if (b32BitIndices)
+        //{
+        //    ASSERT(inPrim.indices->componentType == Accessor::kUnsignedInt);
+        //    OptimizeFaces((uint32_t*)inPrim.indices->dataPtr, inPrim.indices->count, (uint32_t*)outPrim.IB->data(), 64);
+        //}
+        //else if (inPrim.indices->componentType == Accessor::kUnsignedShort)
+        //{
+        //    OptimizeFaces((uint16_t*)inPrim.indices->dataPtr, inPrim.indices->count, (uint16_t*)outPrim.IB->data(), 64);
+        //}
+        //else
+        //{
+        //    OptimizeFaces((uint32_t*)inPrim.indices->dataPtr, inPrim.indices->count, (uint16_t*)outPrim.IB->data(), 64);
+        //}
         indices = outPrim.IB->data();
     }
 
@@ -429,7 +429,7 @@ void OptimizeMesh( Renderer::Primitive& outPrim, const glTF::Primitive& inPrim, 
         dvbw.Write(weights.get(), "BLENDWEIGHT", 0, vertexCount);
     }
 
-    ASSERT(material.index < 0x8000, "Only 15-bit material indices allowed");
+     ASSERT(material.index < 0x8000, "Only 15-bit material indices allowed");
 
     outPrim.vertexStride = (uint16_t)stride;
     outPrim.index32 = b32BitIndices ? 1 : 0;

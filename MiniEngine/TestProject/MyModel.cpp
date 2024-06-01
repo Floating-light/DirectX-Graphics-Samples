@@ -9,6 +9,10 @@
 #include <algorithm>
 #include <utility>
 
+#include "DirectXMath.h"
+#include "DirectXPackedVector.h"
+
+
 #include "TextureConvert.h"
 #include "Math/BoundingSphere.h"
 
@@ -213,10 +217,16 @@ void TraverseScene(aiNode* node,
         TraverseScene(node->mChildren[i], sceneGraph, modelBSphere, modelBBox, meshList, bufferMemory, ++curPos, WorldTransform);
     }
 }
+std::uint32_t ConvertNormalToR10G10B10A2_UNORM(aiVector3D InVec3);
+
 static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::vector<byte>& GeometryData) 
 {
     for (int i = 0; i < Scene->mNumMeshes; ++i)
     {
+        if (i == 7)
+        {
+            Utility::Print("Custom 7------------\n");
+        }
         aiMesh* CurMesh = Scene->mMeshes[i];
         Mesh* NewMesh = new Mesh(); 
         model.m_Meshes.push_back(NewMesh);
@@ -235,7 +245,7 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         NewMesh->bounds[2] = BoundSphereCenter.z;
         NewMesh->bounds[3] = BoundSphereRadius;
         // NewMesh->psoFlags; // TODO: 处理 PSOFlags::kAlphaBlend, PSOFlags::kAlphaTest, PSOFlags::kTwoSided,
-        NewMesh->pso = 0xFF; // 渲染的时候创建
+        NewMesh->pso = 0xFFFF; // 渲染的时候创建
         NewMesh->numJoints = 0; // 暂时不管joints
         NewMesh->startJoint = 0xFFFF;
         NewMesh->numDraws = 1;  
@@ -244,20 +254,30 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         assert(CurMesh->mPrimitiveTypes & aiPrimitiveType::aiPrimitiveType_TRIANGLE); 
         assert(CurMesh->HasPositions());
         assert(CurMesh->HasNormals());
-        
+        // Position DXGI_FORMAT_R32G32B32_FLOAT
+        constexpr uint32_t size_position = sizeof(float) * 3;
+        // Normal DXGI_FORMAT_R10G10B10A2_UNORM    
+        constexpr uint32_t size_normal = sizeof(float);
+        // Tangent DXGI_FORMAT_R10G10B10A2_UNORM
+        constexpr uint32_t size_tangent = sizeof(float);
+        // UV DXGI_FORMAT_R16G16_FLOAT
+        constexpr uint32_t size_uv = sizeof(DirectX::PackedVector::XMHALF2);
+
         NewMesh->psoFlags |= PSOFlags::kHasPosition | PSOFlags::kHasNormal;
         assert(sizeof(aiVector3D) == 3 * sizeof(float));
-        uint32_t strides = sizeof(aiVector3D) * 2; // Position and normal 
+
+        uint32_t strides = size_position + size_normal; // Position  
         uint32_t MaxTexCoordNum = 2;
         
-        assert(CurMesh->HasTangentsAndBitangents());
-        NewMesh->psoFlags |= PSOFlags::kHasTangent;
-        strides += sizeof(aiVector3D); 
-        
+        assert(CurMesh->HasTangentsAndBitangents()); 
+        NewMesh->psoFlags |= PSOFlags::kHasTangent; 
+        strides += size_tangent; 
+
         assert(CurMesh->HasTextureCoords(0)); 
         NewMesh->psoFlags |= PSOFlags::kHasUV0; 
         assert(CurMesh->mNumUVComponents[0] == 2);  
-        strides += sizeof(float) * 2;
+        //DirectX::PackedVector::XMHALF2 HF;
+        strides += size_uv; 
 
         assert(!CurMesh->HasTextureCoords(1)); 
         
@@ -266,8 +286,9 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         assert(sizeof(CurMesh->mFaces[0].mIndices[0]) == sizeof(uint32_t)); 
 
         const uint32_t VerticesSize = CurMesh->mNumVertices * strides;
-        const uint32_t DepthVerticesSize = CurMesh->mNumVertices * sizeof(aiVector3D);
-        const uint32_t IndexBufferSize = CurMesh->mNumFaces * sizeof(uint32_t) * 3;
+        const uint32_t DepthVerticesSize = CurMesh->mNumVertices * size_position; 
+        const uint32_t IndexBufferSize = CurMesh->mNumFaces * sizeof(uint16_t) * 3;
+        //totalIndexSize += Math::AlignUp(prim.IB->size(), 4);
         
         NewMesh->vbOffset = GeometryData.size(); 
         NewMesh->vbSize = VerticesSize;
@@ -276,7 +297,8 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         NewMesh->vbDepthSize = DepthVerticesSize;
         NewMesh->ibOffset = NewMesh->vbDepthOffset + DepthVerticesSize; 
         NewMesh->ibSize = IndexBufferSize;
-        NewMesh->ibFormat = DXGI_FORMAT_R32_UINT; 
+        //NewMesh->ibFormat = DXGI_FORMAT_R32_UINT; 
+        NewMesh->ibFormat = DXGI_FORMAT_R16_UINT;
 
         NewMesh->draw[0].startIndex = 0; 
         NewMesh->draw[0].primCount = CurMesh->mNumFaces * 3; 
@@ -284,37 +306,51 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
 
         // 正常渲染的顶点数据 + Depth 顶点数据(只有位置，没有Normal等其他东西)
         std::vector<byte> byteStream(VerticesSize + DepthVerticesSize + IndexBufferSize); 
+        Utility::Printf("VB: %d, DVB: %d, IB: %d\n", VerticesSize, DepthVerticesSize, IndexBufferSize);
+        Utility::Printf("custom: %d. all data size: %d\n", i, byteStream.size());  
 
         unsigned char* pPosition = byteStream.data();  
-        unsigned char* pNormal = pPosition + sizeof(aiVector3D);  
-        unsigned char* pTangent = pNormal + sizeof(aiVector3D);
-        unsigned char* pUV0 = pTangent + sizeof(aiVector3D);
+        unsigned char* pNormal = pPosition + size_position;   
+        unsigned char* pTangent = pNormal + size_normal; 
+        unsigned char* pUV0 = pTangent + size_tangent; 
 
         unsigned char* pDepthPosition = byteStream.data() + VerticesSize; 
 
         unsigned char* pIndexBuffer = byteStream.data() + VerticesSize + DepthVerticesSize; 
 
+        assert(sizeof(aiVector3D) == size_position);
         for (int vi = 0; vi < CurMesh->mNumVertices; vi++) 
         {
             memcpy(pPosition, &(CurMesh->mVertices[vi]), sizeof(aiVector3D));
             pPosition += strides;
-            memcpy(pNormal, &(CurMesh->mNormals[vi]), sizeof(aiVector3D));
+
+            auto PackedNormal = DirectX::PackedVector::XMXDECN4(CurMesh->mNormals[vi].x, CurMesh->mNormals[vi].y, CurMesh->mNormals[vi].z, 0);  
+            memcpy(pNormal, &(PackedNormal), size_normal);
             pNormal += strides;
-            memcpy(pTangent, &(CurMesh->mNormals[vi]), sizeof(aiVector3D));
-            pTangent += strides;
-            memcpy(pUV0, &(CurMesh->mTextureCoords[0][vi]), 2 * sizeof(float));
+            
+            auto PackedTangent = DirectX::PackedVector::XMXDECN4(CurMesh->mTangents[vi].x, CurMesh->mTangents[vi].y, CurMesh->mTangents[vi].z, 0); 
+            memcpy(pTangent, &(PackedTangent), size_tangent); 
+            pTangent += strides; 
+            
+            DirectX::PackedVector::XMHALF2 uv0_16 = DirectX::PackedVector::XMHALF2(CurMesh->mTextureCoords[0][vi].x, CurMesh->mTextureCoords[0][vi].y);
+            memcpy(pUV0, &(uv0_16), size_uv); 
             pUV0 += strides;
 
             memcpy(pDepthPosition, &(CurMesh->mVertices[vi]), sizeof(aiVector3D)); 
             pDepthPosition += sizeof(aiVector3D); 
         }
 
-        const uint32_t IndBufStride = 3 * sizeof(uint32_t);
+        const uint32_t IndBufStride = 3 * sizeof(uint16_t);
+        
         for (int ii = 0; ii < CurMesh->mNumFaces; ++ii)
         {
             const aiFace& f = CurMesh->mFaces[ii];
             assert(f.mNumIndices == 3);
-            memcpy(pIndexBuffer, f.mIndices, IndBufStride);
+            uint16_t lv[3] = {}; 
+            lv[0] = static_cast<uint16_t>(f.mIndices[0]);
+            lv[1] = static_cast<uint16_t>(f.mIndices[1]);
+            lv[2] = static_cast<uint16_t>(f.mIndices[2]);
+            memcpy(pIndexBuffer, lv, IndBufStride);
             pIndexBuffer += IndBufStride;
         }
         GeometryData.insert(GeometryData.end(), byteStream.begin(), byteStream.end());
@@ -331,6 +367,7 @@ static void BuildMesh(Renderer::ModelData& model, const aiScene* InScene, const 
     n.xform = Math::Matrix4(Math::kIdentity);
     n.rotation = Math::Quaternion(Math::kIdentity);
     n.scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+    //n.scale = XMFLOAT3(0.1f, 0.1f, 0.1f);
     n.matrixIdx = 0;
     n.hasSibling = 0;
 
@@ -383,7 +420,7 @@ std::shared_ptr<Renderer::ModelData> FMyModel::LoadModel(const std::string& InPa
         assert(0 && "TODO: animations");
     }
     BuildMaterials(*MyModel, scene, basePath);
-
+    MyModel->m_GeometryData.clear();
     PopulateMesh(scene, *MyModel, MyModel->m_GeometryData);
     BuildMesh(*MyModel, scene, basePath);  
 
