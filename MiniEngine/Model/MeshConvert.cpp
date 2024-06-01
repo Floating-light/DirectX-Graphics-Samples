@@ -159,6 +159,10 @@ void OptimizeMesh( Renderer::Primitive& outPrim, const glTF::Primitive& inPrim, 
         //    OptimizeFaces((uint32_t*)inPrim.indices->dataPtr, inPrim.indices->count, (uint16_t*)outPrim.IB->data(), 64);
         //}
         indices = outPrim.IB->data();
+        //std::vector<uint16_t> v(outPrim.IB->size() / sizeof(uint16_t));
+
+        memcpy( indices, inPrim.indices->dataPtr, outPrim.IB->size()); 
+        //Utility::Print("   ");
     }
 
     ASSERT(maxIndex > 0);

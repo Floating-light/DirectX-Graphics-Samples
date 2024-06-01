@@ -131,6 +131,14 @@ void LoadIBLTextures()
     if (g_IBLTextures.size() > 0)
         g_IBLSet.Increment();
 }
+struct FTest
+{
+    float Pos[3];
+    uint32_t n;
+    uint32_t t;
+    uint16_t uv1; 
+    uint16_t uv2;
+};
 void TestProject::Startup( void )
 {
     if(1)
@@ -150,24 +158,33 @@ void TestProject::Startup( void )
             const std::wstring basePathW = Utility::GetBasePath(filePathW);
             if (AM.BuildModel(offData, basePathW))
             {
-                bool Succ = Renderer::SaveModel(miniFileName, offData);
+                //bool Succ = Renderer::SaveModel(miniFileName, offData);
                 Utility::Printf("success : %d", false);
             }
         }
 
         std::shared_ptr<Renderer::ModelData> NewModel = FMyModel::LoadModel(filePath); 
+
         for (int i = 0; i < NewModel->m_Meshes.size(); ++i)
         {
             Mesh* MyMesh = NewModel->m_Meshes[i];
             Mesh* OldMesh = offData.m_Meshes[i];
-            memcpy(MyMesh->bounds, OldMesh->bounds, 4 * sizeof(float));
+            memcpy(MyMesh->bounds, OldMesh->bounds, 4 * sizeof(float));  
+
             assert(MyMesh->draw[0].primCount == OldMesh->draw[0].primCount);
             assert(MyMesh->draw[0].baseVertex == OldMesh->draw[0].baseVertex);
             assert(MyMesh->draw[0].startIndex == OldMesh->draw[0].startIndex);
             assert(MyMesh->vbOffset == OldMesh->vbOffset);
             assert(MyMesh->vbSize == OldMesh->vbSize);
-            //int Equi = memcmp(NewModel->m_GeometryData.data() + MyMesh->vbOffset, offData.m_GeometryData.data() + OldMesh->vbOffset, MyMesh->vbSize);
-            //assert(Equi == 0);
+
+            std::vector< FTest> test1(MyMesh->vbSize / 24);
+            std::vector< FTest> test2(MyMesh->vbSize / 24);
+            memcpy(test1.data(), NewModel->m_GeometryData.data() + MyMesh->vbOffset, MyMesh->vbSize); 
+            memcpy(test2.data(), offData.m_GeometryData.data() + MyMesh->vbOffset, MyMesh->vbSize);
+
+            int Equiiii = memcmp(NewModel->m_GeometryData.data() + MyMesh->vbOffset, 
+                                 offData.m_GeometryData.data() + OldMesh->vbOffset, MyMesh->vbSize);
+            //assert(Equiiii == 0); 
 
             assert(MyMesh->vbDepthOffset== OldMesh->vbDepthOffset);
             assert(MyMesh->vbDepthSize == OldMesh->vbDepthSize);
@@ -175,17 +192,20 @@ void TestProject::Startup( void )
             assert(MyMesh->ibSize== OldMesh->ibSize);
             std::vector<uint16_t> Ind1(MyMesh->ibSize/ sizeof(uint16_t)); 
             std::vector<uint16_t> Ind2(MyMesh->ibSize/ sizeof(uint16_t)); 
-            memcpy(Ind1.data(), NewModel->m_GeometryData.data() + MyMesh->ibOffset, MyMesh->ibSize);  
-            memcpy(Ind2.data(), offData.m_GeometryData.data() + OldMesh->ibOffset + MyMesh->ibOffset, MyMesh->ibSize); 
+            memcpy(Ind1.data(), NewModel->m_GeometryData.data() + MyMesh->ibOffset, MyMesh->ibSize);   
+            memcpy(Ind2.data(), offData.m_GeometryData.data() + OldMesh->ibOffset , MyMesh->ibSize);  
 
-            int Equi = memcmp(NewModel->m_GeometryData.data() + MyMesh->ibOffset, offData.m_GeometryData.data() + OldMesh->ibOffset, MyMesh->ibSize);
+
+            int Equi = memcmp(NewModel->m_GeometryData.data() + MyMesh->ibOffset, 
+                              offData.m_GeometryData.data() + OldMesh->ibOffset,
+                              MyMesh->ibSize);
             assert(Equi == 0);
             assert(MyMesh->vbStride == OldMesh->vbStride);
             assert(MyMesh->ibFormat== OldMesh->ibFormat);
-
         }
-        
-        //bool Succ = Renderer::SaveModel(miniFileName, *NewModel);
+        NewModel->m_BoundingBox = offData.m_BoundingBox;
+        NewModel->m_BoundingSphere = offData.m_BoundingSphere;
+        bool Succ = Renderer::SaveModel(miniFileName, *NewModel);
         //Utility::Printf("success : %d", Succ);
     }
     MotionBlur::Enable = false;
@@ -205,7 +225,6 @@ void TestProject::Startup( void )
     //m_Camera.SetEyeAtUp(eye, Math::Vector3(Math::kZero), Math::Vector3(Math::kYUnitVector));
 
     //m_Camera.SetZRange(1.0f, 10000.0f);
-    //m_CameraController.reset(new FlyingFPSCamera(m_Camera, Math::Vector3(Math::kYUnitVector)));
 
     //m_ModelInst = Renderer::LoadModel(L"HuangQuan/exported/untitled22222.gltf", true);
     //m_ModelInst = Renderer::LoadModel(L"HuangQuan/星穹铁道—黄泉（轴修复）.gl", true);
@@ -215,9 +234,12 @@ void TestProject::Startup( void )
 
     MotionBlur::Enable = false;
     m_Camera.SetZRange(1.0f, 10000.0f);
-    m_CameraController.reset(new OrbitCamera(m_Camera, m_ModelInst.GetBoundingSphere(), Vector3(kYUnitVector)));
+    //m_CameraController.reset(new OrbitCamera(m_Camera, m_ModelInst.GetBoundingSphere(), Vector3(kYUnitVector)));
+    auto cam = new FlyingFPSCamera(m_Camera, Math::Vector3(Math::kYUnitVector));
+    m_CameraController.reset(cam); 
 
-
+    //cam->SlowMovement(true);
+    //cam->SlowRotation(true);
 }
 
 void TestProject::Cleanup( void )

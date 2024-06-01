@@ -45,7 +45,7 @@ bool AssimpModel::Load(const string& filename)
 	Clear();
 
 	bool rval = false;
-	bool needToOptimize = true;
+	bool needToOptimize = false;
 	switch (FormatFromFilename(filename))
 	{
 	case format_none:
@@ -113,7 +113,7 @@ bool AssimpModel::LoadAssimp(const string& filename)
         aiProcess_GenSmoothNormals |
         aiProcess_SplitLargeMeshes |
         aiProcess_ValidateDataStructure |
-        //aiProcess_ImproveCacheLocality | // handled by optimizePostTransform()
+        aiProcess_ImproveCacheLocality | // handled by optimizePostTransform()
         aiProcess_RemoveRedundantMaterials |
         aiProcess_SortByPType |
         aiProcess_FindInvalidData |
@@ -381,6 +381,9 @@ bool AssimpModel::LoadAssimp(const string& filename)
             *dstIndexDepth++ = srcMesh->mFaces[f].mIndices[1];
             *dstIndexDepth++ = srcMesh->mFaces[f].mIndices[2];
         }
+        std::vector<uint16_t> t(srcMesh->mNumFaces * 3);
+        memcpy(t.data(), m_pIndexData + dstMesh->indexDataByteOffset, t.size());
+
         Utility::Printf("%d mesh: %s material %d, face num : %d \n", meshIndex, srcMesh->mName.C_Str(), srcMesh->mMaterialIndex, srcMesh->mNumFaces);
 
     }

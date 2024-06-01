@@ -143,7 +143,7 @@ static void BuildMaterials(Renderer::ModelData& model, const aiScene* InScene, c
                 {
                     model.m_TextureNames.push_back(texName);
                     // TODO: opacity ！= 1 开启alpha混合? 
-                    model.m_TextureOptions.push_back(TextureOptions(false, false, true));
+                    model.m_TextureOptions.push_back(TextureOptions(true, false, true));
                 }
                 TexData.stringIdx[i] = index; 
             }
@@ -256,7 +256,7 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         assert(CurMesh->HasNormals());
         // Position DXGI_FORMAT_R32G32B32_FLOAT
         constexpr uint32_t size_position = sizeof(float) * 3;
-        // Normal DXGI_FORMAT_R10G10B10A2_UNORM    
+        // Normal DXGI_FORMAT_R10G10B10A2_UNORM      XMUDECN4
         constexpr uint32_t size_normal = sizeof(float);
         // Tangent DXGI_FORMAT_R10G10B10A2_UNORM
         constexpr uint32_t size_tangent = sizeof(float);
@@ -287,7 +287,9 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
 
         const uint32_t VerticesSize = CurMesh->mNumVertices * strides;
         const uint32_t DepthVerticesSize = CurMesh->mNumVertices * size_position; 
-        const uint32_t IndexBufferSize = CurMesh->mNumFaces * sizeof(uint16_t) * 3;
+        //const uint32_t IndexBufferSize = CurMesh->mNumFaces * sizeof(uint16_t) * 3;
+        const uint32_t OriginIBSize = CurMesh->mNumFaces * sizeof(uint16_t) * 3; 
+        const uint32_t IndexBufferSize = Math::AlignUp(CurMesh->mNumFaces * sizeof(uint16_t) * 3, 4); 
         //totalIndexSize += Math::AlignUp(prim.IB->size(), 4);
         
         NewMesh->vbOffset = GeometryData.size(); 
@@ -296,7 +298,7 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         NewMesh->vbDepthOffset = NewMesh->vbOffset + VerticesSize;
         NewMesh->vbDepthSize = DepthVerticesSize;
         NewMesh->ibOffset = NewMesh->vbDepthOffset + DepthVerticesSize; 
-        NewMesh->ibSize = IndexBufferSize;
+        NewMesh->ibSize = OriginIBSize; 
         //NewMesh->ibFormat = DXGI_FORMAT_R32_UINT; 
         NewMesh->ibFormat = DXGI_FORMAT_R16_UINT;
 
@@ -323,12 +325,21 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         {
             memcpy(pPosition, &(CurMesh->mVertices[vi]), sizeof(aiVector3D));
             pPosition += strides;
-
-            auto PackedNormal = DirectX::PackedVector::XMXDECN4(CurMesh->mNormals[vi].x, CurMesh->mNormals[vi].y, CurMesh->mNormals[vi].z, 0);  
+            
+            aiVector3D Nor = CurMesh->mNormals[vi];
+            Nor.x = Nor.x * 0.5f + 0.5f; 
+            Nor.y = Nor.y * 0.5f + 0.5f;
+            Nor.z = Nor.z * 0.5f + 0.5f;
+        
+            auto PackedNormal = DirectX::PackedVector::XMUDECN4(Nor.x, Nor.y, Nor.z, 0); 
             memcpy(pNormal, &(PackedNormal), size_normal);
             pNormal += strides;
             
-            auto PackedTangent = DirectX::PackedVector::XMXDECN4(CurMesh->mTangents[vi].x, CurMesh->mTangents[vi].y, CurMesh->mTangents[vi].z, 0); 
+            aiVector3D Tan = CurMesh->mTangents[vi];
+            Tan.x = Tan.x * 0.5f + 0.5f;
+            Tan.y = Tan.y * 0.5f + 0.5f;
+            Tan.z = Tan.z * 0.5f + 0.5f;
+            auto PackedTangent = DirectX::PackedVector::XMUDECN4(Tan.x, Tan.y, Tan.z, 0); 
             memcpy(pTangent, &(PackedTangent), size_tangent); 
             pTangent += strides; 
             
@@ -344,7 +355,7 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         
         for (int ii = 0; ii < CurMesh->mNumFaces; ++ii)
         {
-            const aiFace& f = CurMesh->mFaces[ii];
+            const aiFace& f = CurMesh->mFaces[ii]; 
             assert(f.mNumIndices == 3);
             uint16_t lv[3] = {}; 
             lv[0] = static_cast<uint16_t>(f.mIndices[0]);
