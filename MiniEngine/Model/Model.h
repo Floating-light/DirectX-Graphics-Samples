@@ -74,7 +74,7 @@ struct Mesh
     {
         uint32_t primCount;   // Number of indices = 3 * number of triangles，index的数量
         uint32_t startIndex;  // Offset to first index in index buffer ，第几个index，不是以byte
-        uint32_t baseVertex;  // Offset to first vertex in vertex buffer，顶点数据的偏移量，第几个顶点数据，不是以byte
+        uint32_t baseVertex;  // Offset to first vertex in vertex buffer，顶点数据的偏移量，第几个顶点数据，不是以byte,以stride
     };
     Draw draw[1];           // Actually 1 or more draws
 };

@@ -6,8 +6,9 @@
 #include <utility>
 #include <unordered_map>
 #include <array>
+#include <algorithm>
+#include <utility>
 
-#include "ModelLoader.h"
 #include "TextureConvert.h"
 #include "Math/BoundingSphere.h"
 
@@ -178,6 +179,7 @@ void TraverseScene(aiNode* node,
     {
         return;
     }
+    Utility::Printf("%d : node %s\n",curPos, node->mName.C_Str());
     GraphNode& NewNode = sceneGraph.emplace_back(); 
     NewNode.hasChildren = node->mNumChildren;
     NewNode.hasSibling= node->mParent && 
@@ -201,7 +203,9 @@ void TraverseScene(aiNode* node,
     // ProcessMesh
     for (int i = 0; i < node->mNumMeshes; ++i)
     {
-        node->mMeshes[i];
+        const unsigned int MeshIndex = node->mMeshes[i];
+        Mesh* m = meshList[MeshIndex];
+        m->meshCBV = curPos;
     }
 
     for (int i = 0; i < node->mNumChildren; ++i)
@@ -216,26 +220,104 @@ static void PopulateMesh(const aiScene* Scene, Renderer::ModelData& model, std::
         aiMesh* CurMesh = Scene->mMeshes[i];
         Mesh* NewMesh = new Mesh(); 
         model.m_Meshes.push_back(NewMesh);
-        NewMesh->meshCBV = -1; // 
-        NewMesh->materialCBV = CurMesh->mMaterialIndex;
-        NewMesh->psoFlags = 0x00; 
+        NewMesh->meshCBV = 0; // TODO
+        NewMesh->materialCBV = CurMesh->mMaterialIndex; 
+        NewMesh->psoFlags = 0x00;  
 
+        const ai_real BoundSphereRadius = std::max<ai_real>(
+            std::max<ai_real>(
+                CurMesh->mAABB.mMax.x - CurMesh->mAABB.mMin.x,
+                CurMesh->mAABB.mMax.y - CurMesh->mAABB.mMin.y),
+            CurMesh->mAABB.mMax.z - CurMesh->mAABB.mMin.z);
+        const aiVector3D BoundSphereCenter = (CurMesh->mAABB.mMax + CurMesh->mAABB.mMin) / 2.f;
+        NewMesh->bounds[0] = BoundSphereCenter.x;
+        NewMesh->bounds[1] = BoundSphereCenter.y;
+        NewMesh->bounds[2] = BoundSphereCenter.z;
+        NewMesh->bounds[3] = BoundSphereRadius;
+        // NewMesh->psoFlags; // TODO: 处理 PSOFlags::kAlphaBlend, PSOFlags::kAlphaTest, PSOFlags::kTwoSided,
+        NewMesh->pso = 0xFF; // 渲染的时候创建
+        NewMesh->numJoints = 0; // 暂时不管joints
+        NewMesh->startJoint = 0xFFFF;
+        NewMesh->numDraws = 1;  
+
+        // 处理顶点数据
         assert(CurMesh->mPrimitiveTypes & aiPrimitiveType::aiPrimitiveType_TRIANGLE); 
         assert(CurMesh->HasPositions());
         assert(CurMesh->HasNormals());
         
         NewMesh->psoFlags |= PSOFlags::kHasPosition | PSOFlags::kHasNormal;
-        std::vector<byte> byteStream; 
-        for (int vi = 0; vi = CurMesh->mNumVertices; vi++)
+        assert(sizeof(aiVector3D) == 3 * sizeof(float));
+        uint32_t strides = sizeof(aiVector3D) * 2; // Position and normal 
+        uint32_t MaxTexCoordNum = 2;
+        
+        assert(CurMesh->HasTangentsAndBitangents());
+        NewMesh->psoFlags |= PSOFlags::kHasTangent;
+        strides += sizeof(aiVector3D); 
+        
+        assert(CurMesh->HasTextureCoords(0)); 
+        NewMesh->psoFlags |= PSOFlags::kHasUV0; 
+        assert(CurMesh->mNumUVComponents[0] == 2);  
+        strides += sizeof(float) * 2;
+
+        assert(!CurMesh->HasTextureCoords(1)); 
+        
+        assert(CurMesh->mNumFaces > 0);
+        assert(CurMesh->mFaces[0].mNumIndices == 3);
+        assert(sizeof(CurMesh->mFaces[0].mIndices[0]) == sizeof(uint32_t)); 
+
+        const uint32_t VerticesSize = CurMesh->mNumVertices * strides;
+        const uint32_t DepthVerticesSize = CurMesh->mNumVertices * sizeof(aiVector3D);
+        const uint32_t IndexBufferSize = CurMesh->mNumFaces * sizeof(uint32_t) * 3;
+        
+        NewMesh->vbOffset = GeometryData.size(); 
+        NewMesh->vbSize = VerticesSize;
+        NewMesh->vbStride = strides;
+        NewMesh->vbDepthOffset = NewMesh->vbOffset + VerticesSize;
+        NewMesh->vbDepthSize = DepthVerticesSize;
+        NewMesh->ibOffset = NewMesh->vbDepthOffset + DepthVerticesSize; 
+        NewMesh->ibSize = IndexBufferSize;
+        NewMesh->ibFormat = DXGI_FORMAT_R32_UINT; 
+
+        NewMesh->draw[0].startIndex = 0; 
+        NewMesh->draw[0].primCount = CurMesh->mNumFaces * 3; 
+        NewMesh->draw[0].baseVertex = 0;
+
+        // 正常渲染的顶点数据 + Depth 顶点数据(只有位置，没有Normal等其他东西)
+        std::vector<byte> byteStream(VerticesSize + DepthVerticesSize + IndexBufferSize); 
+
+        unsigned char* pPosition = byteStream.data();  
+        unsigned char* pNormal = pPosition + sizeof(aiVector3D);  
+        unsigned char* pTangent = pNormal + sizeof(aiVector3D);
+        unsigned char* pUV0 = pTangent + sizeof(aiVector3D);
+
+        unsigned char* pDepthPosition = byteStream.data() + VerticesSize; 
+
+        unsigned char* pIndexBuffer = byteStream.data() + VerticesSize + DepthVerticesSize; 
+
+        for (int vi = 0; vi < CurMesh->mNumVertices; vi++) 
         {
-            
+            memcpy(pPosition, &(CurMesh->mVertices[vi]), sizeof(aiVector3D));
+            pPosition += strides;
+            memcpy(pNormal, &(CurMesh->mNormals[vi]), sizeof(aiVector3D));
+            pNormal += strides;
+            memcpy(pTangent, &(CurMesh->mNormals[vi]), sizeof(aiVector3D));
+            pTangent += strides;
+            memcpy(pUV0, &(CurMesh->mTextureCoords[0][vi]), 2 * sizeof(float));
+            pUV0 += strides;
+
+            memcpy(pDepthPosition, &(CurMesh->mVertices[vi]), sizeof(aiVector3D)); 
+            pDepthPosition += sizeof(aiVector3D); 
         }
-        if(NewMesh)
-        CurMesh->GetNumUVChannels();
-        std::vector<> Vdata;
-        CurMesh->mNumVertices;
-        CurMesh->mNumFaces;
-        CurMesh->mFaces;
+
+        const uint32_t IndBufStride = 3 * sizeof(uint32_t);
+        for (int ii = 0; ii < CurMesh->mNumFaces; ++ii)
+        {
+            const aiFace& f = CurMesh->mFaces[ii];
+            assert(f.mNumIndices == 3);
+            memcpy(pIndexBuffer, f.mIndices, IndBufStride);
+            pIndexBuffer += IndBufStride;
+        }
+        GeometryData.insert(GeometryData.end(), byteStream.begin(), byteStream.end());
     }
 }
 static void BuildMesh(Renderer::ModelData& model, const aiScene* InScene, const std::string& basePath)
@@ -243,13 +325,22 @@ static void BuildMesh(Renderer::ModelData& model, const aiScene* InScene, const 
     aiNode* node = InScene->mRootNode;
     model.m_BoundingSphere = Math::BoundingSphere(Math::kZero);
     model.m_BoundingBox = Math::AxisAlignedBox(Math::kZero);
-    TraverseScene(node, model.m_SceneGraph, model.m_BoundingSphere, model.m_BoundingBox, model.m_Meshes, model.m_GeometryData, 0, Math::Matrix4(Math::kIdentity));
-    
+    //TraverseScene(node, model.m_SceneGraph, model.m_BoundingSphere, model.m_BoundingBox, model.m_Meshes, model.m_GeometryData, 0, Math::Matrix4(Math::kIdentity));
+    model.m_SceneGraph.resize(1);
+    GraphNode& n = model.m_SceneGraph[0];
+    n.xform = Math::Matrix4(Math::kIdentity);
+    n.rotation = Math::Quaternion(Math::kIdentity);
+    n.scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+    n.matrixIdx = 0;
+    n.hasSibling = 0;
+
+
 }
 
-std::shared_ptr<FMyModel> FMyModel::LoadModel(const std::string& InPath)
+std::shared_ptr<Renderer::ModelData> FMyModel::LoadModel(const std::string& InPath) 
 {
-    Renderer::ModelData MyModel;
+    std::shared_ptr<Renderer::ModelData> MyModel = std::make_shared<Renderer::ModelData>(); 
+
     Assimp::Importer importer;
     std::string basePath = Utility::GetBasePath(InPath);
     // 移除不要的数据
@@ -291,10 +382,11 @@ std::shared_ptr<FMyModel> FMyModel::LoadModel(const std::string& InPath)
     {
         assert(0 && "TODO: animations");
     }
-    BuildMaterials(MyModel, scene, basePath);
+    BuildMaterials(*MyModel, scene, basePath);
 
-    BuildMesh(MyModel, scene, basePath); 
+    PopulateMesh(scene, *MyModel, MyModel->m_GeometryData);
+    BuildMesh(*MyModel, scene, basePath);  
 
 
-    return std::shared_ptr<FMyModel>(); 
+    return MyModel; 
 }

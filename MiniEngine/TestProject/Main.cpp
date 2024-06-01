@@ -135,26 +135,29 @@ void TestProject::Startup( void )
 {
     if(1)
     {
-        AssimpModel AM;
-        std::string filePath = "HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
-        std::wstring filePathW = L"HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
+        //std::string filePath = "HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
+        //std::wstring filePathW = L"HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
 
-        std::shared_ptr<FMyModel> NewModel = FMyModel::LoadModel(filePath); 
+        std::string filePath = "HeiTianE/星穹铁道—黑天鹅（优化）.pmx"; 
+        std::wstring filePathW = L"HeiTianE/星穹铁道—黑天鹅（优化）.pmx"; 
+
         
-        //std::string filePath = "HeiTianE/星穹铁道—黑天鹅（优化）.pmx";
-        //std::wstring filePathW = L"HeiTianE/星穹铁道—黑天鹅（优化）.pmx";
-        //if (AM.Load(filePath))
-        //{
-        //    Renderer::ModelData Data;
-        //    const std::wstring basePathW = Utility::GetBasePath(filePathW);
-        //    if (AM.BuildModel(Data, basePathW))
-        //    {
-        //        const std::wstring miniFileName = Utility::RemoveExtension(filePathW) + L".mini"; 
+        Renderer::ModelData offData;
+        const std::wstring miniFileName = Utility::RemoveExtension(filePathW) + L".mini"; 
+        AssimpModel AM;
+        if (AM.Load(filePath))
+        {
+            const std::wstring basePathW = Utility::GetBasePath(filePathW);
+            if (AM.BuildModel(offData, basePathW))
+            {
+                //bool Succ = Renderer::SaveModel(miniFileName, Data);
+                Utility::Printf("success : %d", false);
+            }
+        }
 
-        //        bool Succ = Renderer::SaveModel(miniFileName, Data);
-        //        Utility::Printf("success : %d", Succ);
-        //    }
-        //}
+        std::shared_ptr<Renderer::ModelData> NewModel = FMyModel::LoadModel(filePath); 
+        bool Succ = Renderer::SaveModel(miniFileName, *NewModel);
+        Utility::Printf("success : %d", Succ);
     }
     MotionBlur::Enable = false;
     TemporalEffects::EnableTAA = false;
