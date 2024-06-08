@@ -32,7 +32,7 @@ cbuffer GlobalConstants : register(b1)
     float3 SunIntensity;
 }
 
-#ifdef ENABLE_SKINNING
+#ifdef ENABLE_SKINNING 
 struct Joint
 {
     float4x4 PosMatrix;

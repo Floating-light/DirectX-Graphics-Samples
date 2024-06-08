@@ -121,7 +121,7 @@ void LoadMaterials(Model& model,
         }
     }
 
-    // Update table offsets for each mesh
+     // Update table offsets for each mesh
     uint8_t* meshPtr = model.m_MeshData.get();
     for (uint32_t i = 0; i < model.m_NumMeshes; ++i)
     {

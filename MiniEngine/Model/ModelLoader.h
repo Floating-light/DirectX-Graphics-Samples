@@ -68,6 +68,7 @@ namespace Renderer
         // 对应材质的textures , 一个TextureData里面多个texture, 对应texture的值是下面"m_TextureNames"的index，没有就是 0xFFFF
         // addressModes 是采样器的flag， 用一个uint32记下了所有对应texture的采样参数
         std::vector<MaterialTextureData> m_MaterialTextures; 
+
         std::vector<std::string> m_TextureNames; // texture 的相对path(文件名)
         std::vector<uint8_t> m_TextureOptions; // 每个texture对应的纹理选项:TexConversionFlags， 没有就是0xFF
     };

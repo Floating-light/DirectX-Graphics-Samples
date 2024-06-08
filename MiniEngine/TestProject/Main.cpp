@@ -143,11 +143,11 @@ void TestProject::Startup( void )
 {
     if(1)
     {
-        //std::string filePath = "HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
-        //std::wstring filePathW = L"HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
+        std::string filePath = "HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
+        std::wstring filePathW = L"HuangQuan/星穹铁道—黄泉（轴修复）.pmx";
 
-        std::string filePath = "HeiTianE/星穹铁道—黑天鹅（优化）.pmx"; 
-        std::wstring filePathW = L"HeiTianE/星穹铁道—黑天鹅（优化）.pmx"; 
+        //std::string filePath = "HeiTianE/星穹铁道—黑天鹅（优化）.pmx"; 
+        //std::wstring filePathW = L"HeiTianE/星穹铁道—黑天鹅（优化）.pmx"; 
 
         
         Renderer::ModelData offData;
@@ -213,7 +213,7 @@ void TestProject::Startup( void )
     FXAA::Enable = false;
     PostEffects::EnableHDR = false;
     PostEffects::EnableAdaptation = false;
-    SSAO::Enable = true; 
+    SSAO::Enable = false; 
     Renderer::Initialize(); 
     LoadIBLTextures();
     // Setup your data
@@ -227,8 +227,8 @@ void TestProject::Startup( void )
     //m_Camera.SetZRange(1.0f, 10000.0f);
 
     //m_ModelInst = Renderer::LoadModel(L"HuangQuan/exported/untitled22222.gltf", true);
-    //m_ModelInst = Renderer::LoadModel(L"HuangQuan/星穹铁道—黄泉（轴修复）.gl", true);
-    m_ModelInst = Renderer::LoadModel(L"HeiTianE/星穹铁道—黑天鹅（优化）.gl", true);
+    m_ModelInst = Renderer::LoadModel(L"HuangQuan/星穹铁道—黄泉（轴修复）.gl", true);
+    //m_ModelInst = Renderer::LoadModel(L"HeiTianE/星穹铁道—黑天鹅（优化）.gl", true);
     m_ModelInst.LoopAllAnimations();
     m_ModelInst.Resize(10.0f);
 
@@ -236,8 +236,8 @@ void TestProject::Startup( void )
     m_Camera.SetZRange(1.0f, 10000.0f);
     //m_CameraController.reset(new OrbitCamera(m_Camera, m_ModelInst.GetBoundingSphere(), Vector3(kYUnitVector)));
     auto cam = new FlyingFPSCamera(m_Camera, Math::Vector3(Math::kYUnitVector));
+    cam->SetHeadingPitchAndPosition(-0.0431998447, -0.259200066, Math::Vector3(1.017963, 15.689726, 15.242565));
     m_CameraController.reset(cam); 
-
     //cam->SlowMovement(true);
     //cam->SlowRotation(true);
 }
@@ -280,7 +280,7 @@ void TestProject::RenderScene( void )
     const D3D12_VIEWPORT& viewport = m_MainViewport;
     const D3D12_RECT& scissor = m_MainScissor;
 
-    ParticleEffectManager::Update(gfxContext.GetComputeContext(), Graphics::GetFrameTime());
+    //ParticleEffectManager::Update(gfxContext.GetComputeContext(), Graphics::GetFrameTime());
     
     Math::Vector3 SunDirection = Math::Vector3(0, 0, 1);
     m_SunShadowCamera.UpdateMatrix(-SunDirection, Vector3(0, -500.0f, 0), Vector3(5000, 3000, 3000),
@@ -293,7 +293,7 @@ void TestProject::RenderScene( void )
     globals.CameraPos = m_Camera.GetPosition();
     globals.SunDirection = SunDirection;
     globals.SunIntensity = Vector3(4.f);
-
+    //Utility::Printf("position [%f,%f,%f]\n", float(m_Camera.GetPosition().GetX()), float( m_Camera.GetPosition().GetY()), float(m_Camera.GetPosition().GetZ()));
     gfxContext.TransitionResource(g_SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);  
     gfxContext.ClearDepth(g_SceneDepthBuffer);
 
@@ -309,25 +309,25 @@ void TestProject::RenderScene( void )
     sorter.Sort();
     
     {
-        ScopedTimer _prof(L"Depth Pre-Pass", gfxContext);
-        sorter.RenderMeshes(Renderer::MeshSorter::kZPass, gfxContext, globals);
+        //ScopedTimer _prof(L"Depth Pre-Pass", gfxContext);
+        //sorter.RenderMeshes(Renderer::MeshSorter::kZPass, gfxContext, globals);
     }
 
-    SSAO::Render(gfxContext, m_Camera);
+    //SSAO::Render(gfxContext, m_Camera);
 
     {
         ScopedTimer _outerprof(L"Main Render", gfxContext);
         {
-            ScopedTimer _prof(L"Sun Shadow Map", gfxContext);
+            //ScopedTimer _prof(L"Sun Shadow Map", gfxContext);
 
-            Renderer::MeshSorter shadowSorter(Renderer::MeshSorter::kShadows); 
-            shadowSorter.SetCamera(m_SunShadowCamera); 
-            shadowSorter.SetDepthStencilTarget(g_ShadowBuffer); 
+            //Renderer::MeshSorter shadowSorter(Renderer::MeshSorter::kShadows); 
+            //shadowSorter.SetCamera(m_SunShadowCamera); 
+            //shadowSorter.SetDepthStencilTarget(g_ShadowBuffer); 
 
-            m_ModelInst.Render(shadowSorter); 
+            //m_ModelInst.Render(shadowSorter); 
 
-            shadowSorter.Sort(); 
-            shadowSorter.RenderMeshes(Renderer::MeshSorter::kZPass, gfxContext, globals); 
+            //shadowSorter.Sort(); 
+            //shadowSorter.RenderMeshes(Renderer::MeshSorter::kZPass, gfxContext, globals); 
         }
         gfxContext.TransitionResource(g_SceneColorBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
         gfxContext.ClearColor(g_SceneColorBuffer);
@@ -343,19 +343,21 @@ void TestProject::RenderScene( void )
 
         }
         Renderer::DrawSkybox(gfxContext, m_Camera, viewport, scissor);
-        sorter.RenderMeshes(Renderer::MeshSorter::kTransparent, gfxContext, globals);
+        //sorter.RenderMeshes(Renderer::MeshSorter::kTransparent, gfxContext, globals);
 
     }
-    MotionBlur::GenerateCameraVelocityBuffer(gfxContext, m_Camera, true);
+    //MotionBlur::GenerateCameraVelocityBuffer(gfxContext, m_Camera, true);
 
-    TemporalEffects::ResolveImage(gfxContext);
+    //TemporalEffects::ResolveImage(gfxContext);
 
-    ParticleEffectManager::Render(gfxContext, m_Camera, g_SceneColorBuffer, g_SceneDepthBuffer, g_LinearDepth[FrameIndex]);
+    //ParticleEffectManager::Render(gfxContext, m_Camera, g_SceneColorBuffer, g_SceneDepthBuffer, g_LinearDepth[FrameIndex]);
 
     // Until I work out how to couple these two, it's "either-or".
-    if (DepthOfField::Enable) 
-        DepthOfField::Render(gfxContext, m_Camera.GetNearClip(), m_Camera.GetFarClip()); 
-    else
-        MotionBlur::RenderObjectBlur(gfxContext, g_VelocityBuffer); 
+    //if (DepthOfField::Enable) 
+    //    DepthOfField::Render(gfxContext, m_Camera.GetNearClip(), m_Camera.GetFarClip()); 
+    //else
+    //{
+    //    //MotionBlur::RenderObjectBlur(gfxContext, g_VelocityBuffer); 
+    //}
     gfxContext.Finish();
 }
